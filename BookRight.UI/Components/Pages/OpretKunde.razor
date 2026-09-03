@@ -1,0 +1,180 @@
+﻿@page "/kunder/opret"
+@rendermode InteractiveServer
+@using BookRight.Facade.Contracts.Kunder
+@using BookRight.Facade.Interfaces
+@inject IKundeFacade KundeFacade
+
+<main class="opret-kunde-side">
+	<BookRightTopNav />
+
+	<article class="opret-kunde-kort" aria-labelledby="opret-kunde-heading">
+		<header class="opret-kunde-header">
+			<h1 id="opret-kunde-heading">Opret ny kunde</h1>
+		</header>
+
+
+		@if (visSuccessPopup && !string.IsNullOrWhiteSpace(succesBesked))
+		{
+			<div class="modal-backdrop" role="presentation">
+				<aside class="success-modal"
+					   role="status"
+					   aria-live="polite"
+					   aria-labelledby="success-modal-title">
+					<h2 id="success-modal-title">Kunde oprettet</h2>
+					<p>@succesBesked</p>
+
+					<button type="button" @onclick="LukSuccessPopup">
+						Luk
+					</button>
+				</aside>
+			</div>
+		}
+
+		@if (visFejlPopup && !string.IsNullOrWhiteSpace(fejlBesked))
+		{
+			<div class="modal-backdrop" role="presentation">
+				<aside class="error-modal"
+					   role="alertdialog"
+					   aria-modal="true"
+					   aria-labelledby="error-modal-title">
+					<h2 id="error-modal-title">Kunne ikke oprette kunde</h2>
+					<p>@fejlBesked</p>
+
+					<button type="button" @onclick="LukFejlPopup">
+						Luk
+					</button>
+				</aside>
+			</div>
+		}
+
+		@if (!string.IsNullOrWhiteSpace(succesBesked))
+		{
+			<p class="opret-kunde-status" role="status">@succesBesked</p>
+		}
+
+
+
+		<EditForm class="opret-kunde-form"
+				  Model="model"
+				  OnValidSubmit="OpretKundeAsync"
+				  FormName="OpretKundeForm">
+
+			<fieldset class="formular-sektion">
+				<legend class="visually-hidden">Kundens stamoplysninger</legend>
+
+				<div class="formular-grid">
+					<div class="formular-felt">
+						<label for="fornavn">Fornavn</label>
+						<InputText id="fornavn" autocomplete="given-name" @bind-Value="model.Fornavn" />
+					</div>
+
+					<div class="formular-felt">
+						<label for="efternavn">Efternavn</label>
+						<InputText id="efternavn" autocomplete="family-name" @bind-Value="model.Efternavn" />
+					</div>
+
+					<div class="formular-felt formular-felt--fuld">
+						<label for="adresse">Adresse</label>
+						<InputText id="adresse" autocomplete="street-address" @bind-Value="model.Adresse" />
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="formular-sektion">
+				<legend class="visually-hidden">Kontaktoplysninger</legend>
+
+				<div class="formular-grid">
+					<div class="formular-felt">
+						<label for="telefon">Telefon</label>
+						<InputText id="telefon" type="tel" autocomplete="tel" @bind-Value="model.Telefon" />
+					</div>
+
+					<div class="formular-felt">
+						<label for="email">Email</label>
+						<InputText id="email" type="email" autocomplete="email" @bind-Value="model.Email" />
+					</div>
+
+					<div class="formular-felt formular-felt--fuld">
+						<label for="foedselsdato">Fødselsdag</label>
+						<InputDate id="foedselsdato" autocomplete="bday" @bind-Value="model.Fødselsdato" />
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="formular-sektion">
+				<legend class="visually-hidden">Helbredsoplysninger</legend>
+
+				<div class="formular-felt">
+					<label for="helbredsnotater">Helbredsnotater</label>
+					<InputTextArea id="helbredsnotater"
+								   placeholder="Eventuelle helbredsoplysninger eller noter..."
+								   @bind-Value="model.Helbredsnotater" />
+				</div>
+			</fieldset>
+
+			<button type="submit">Opret kunde</button>
+		</EditForm>
+	</article>
+</main>
+
+
+@code {
+	private OpretKundeRequest model = new()
+	{
+		Fødselsdato = DateOnly.FromDateTime(DateTime.Today)
+	};
+
+	private string? fejlBesked;
+	private string? succesBesked;
+	private bool visFejlPopup;
+	private bool visSuccessPopup;
+
+	private async Task OpretKundeAsync()
+	{
+		fejlBesked = null;
+		succesBesked = null;
+		visFejlPopup = false;
+		visSuccessPopup = false;
+
+		try
+		{
+			var kundeId = await KundeFacade.OpretKundeAsync(model);
+
+			succesBesked = $"Kunde oprettet med ID: {kundeId}";
+			visSuccessPopup = true;
+
+			model = new OpretKundeRequest
+			{
+				Fødselsdato = DateOnly.FromDateTime(DateTime.Today)
+			};
+		}
+		catch (ArgumentException ex)
+		{
+			fejlBesked = ex.Message;
+			visFejlPopup = true;
+		}
+		catch (InvalidOperationException ex)
+		{
+			fejlBesked = ex.Message;
+			visFejlPopup = true;
+		}
+		catch (Exception)
+		{
+			fejlBesked = "Der opstod en uventet fejl. Prøv igen.";
+			visFejlPopup = true;
+		}
+
+	}
+
+	private void LukFejlPopup()
+	{
+		visFejlPopup = false;
+		fejlBesked = null;
+	}
+
+	private void LukSuccessPopup()
+	{
+		visSuccessPopup = false;
+		succesBesked = null;
+	}
+}

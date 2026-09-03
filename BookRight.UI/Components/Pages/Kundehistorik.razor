@@ -1,0 +1,102 @@
+@page "/kundehistorik"
+@rendermode InteractiveServer
+@using BookRight.Facade.Contracts.Bookinger
+@using BookRight.Facade.Contracts.Kunder
+@using BookRight.Facade.Interfaces
+@inject IBookingFacade BookingFacade
+@inject IKundeFacade KundeFacade
+
+<main class="opret-booking-side">
+    <BookRightTopNav />
+
+    <article class="opret-booking-kort" aria-labelledby="kundehistorik-heading">
+        <header class="opret-booking-header">
+            <h1 id="kundehistorik-heading">Kundehistorik</h1>
+        </header>
+
+        @if (isLoading)
+        {
+            <p>Indlæser data...</p>
+        }
+        else
+        {
+            <div class="opret-booking-form">
+                <div class="formular-sektion">
+                    <div class="formular-felt">
+                        <label for="kunde">Kunde</label>
+                        <select id="kunde" @onchange="OnKundeValgt">
+                            <option value="">-- Vælg kunde --</option>
+                            @foreach (var kunde in alleKunder)
+                            {
+                                <option value="@kunde.KundeId">@kunde.FuldeNavn</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                @if (valgtKundeId != Guid.Empty)
+                {
+                    @if (isLoadingHistorik)
+                    {
+                        <p>Indlæser kundehistorik...</p>
+                    }
+                    else if (kundehistorik.Count == 0)
+                    {
+                        <p>Der er ingen kundehistorik for den valgte kunde.</p>
+                    }
+                    else
+                    {
+                        <div class="formular-sektion">
+                            @foreach (var post in kundehistorik)
+                            {
+                                <article>
+                                    <h2>@post.BehandlingstypeNavn</h2>
+                                    <p>Status: @post.Status</p>
+                                    <p>Tidspunkt: @post.StartTid.ToString("dd-MM-yyyy HH:mm") - @post.SlutTid.ToString("HH:mm")</p>
+                                    <p>Behandler: @post.BehandlerNavn</p>
+                                    <p>Klinik: @post.KlinikNavn</p>
+                                    <p>Pris: @post.PrisMedRabat kr.</p>
+                                    @if (!string.IsNullOrWhiteSpace(post.AnvendtRabatType))
+                                    {
+                                        <p>Rabat: @post.AnvendtRabatType</p>
+                                    }
+                                </article>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </article>
+</main>
+
+@code {
+    private List<KundeDto> alleKunder = new();
+    private List<KundehistorikDto> kundehistorik = new();
+    private Guid valgtKundeId = Guid.Empty;
+    private bool isLoading = true;
+    private bool isLoadingHistorik = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        alleKunder = (await KundeFacade.HentAlleKunderAsync()).ToList();
+        isLoading = false;
+    }
+
+    private async Task OnKundeValgt(ChangeEventArgs e)
+    {
+        if (!Guid.TryParse(e.Value?.ToString(), out var kundeId))
+        {
+            valgtKundeId = Guid.Empty;
+            kundehistorik = new();
+            return;
+        }
+
+        valgtKundeId = kundeId;
+        isLoadingHistorik = true;
+
+        kundehistorik = (await BookingFacade.HentKundehistorikAsync(kundeId)).ToList();
+
+        isLoadingHistorik = false;
+    }
+}

@@ -1,0 +1,300 @@
+@page "/opret-booking"
+@rendermode InteractiveServer
+@using BookRight.Facade.Contracts.Bookinger
+@using BookRight.Facade.Contracts.Kunder
+@using BookRight.Facade.Interfaces
+@inject IBookingFacade BookingFacade
+@inject IKundeFacade KundeFacade
+
+<main class="opret-booking-side">
+    <BookRightTopNav />
+
+    <article class="opret-booking-kort" aria-labelledby="opret-booking-heading">
+        <header class="opret-booking-header">
+            <h1 id="opret-booking-heading">Opret booking</h1>
+        </header>
+
+
+        @if (senesteBookingResponse is not null && success)
+        {
+            <div class="modal-backdrop" role="presentation">
+                <aside class="booking-modal booking-modal--success"
+                       role="dialog"
+                       aria-modal="true"
+                       aria-labelledby="booking-success-title">
+                    <h2 id="booking-success-title">Booking oprettet</h2>
+
+                    <p>Pris før rabat: @senesteBookingResponse.PrisUdenRabat.ToString("N2") kr.</p>
+                    <p>Rabat: @senesteBookingResponse.AnvendtRabatType (@senesteBookingResponse.RabatProcent.ToString("N0")%)</p>
+                    <p>Pris efter rabat: @senesteBookingResponse.PrisMedRabat.ToString("N2") kr.</p>
+
+                    <button type="button" @onclick="LukPopup">Luk</button>
+                </aside>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(besked) && !success)
+        {
+            <div class="modal-backdrop" role="presentation">
+                <aside class="booking-modal booking-modal--error"
+                       role="alertdialog"
+                       aria-modal="true"
+                       aria-labelledby="booking-error-title">
+                    <h2 id="booking-error-title">Kunne ikke oprette booking</h2>
+                    <p>@besked</p>
+                    <button type="button" @onclick="LukPopup">Luk</button>
+                </aside>
+            </div>
+        }
+
+        @if (isLoading)
+        {
+            <p>Indlæser data...</p>
+        }
+        else
+        {
+            <div class="opret-booking-form">
+
+                @* Kunde *@
+                <div class="formular-sektion">
+                    <div class="formular-felt">
+                        <label for="kunde">Kunde</label>
+                        <select id="kunde" @onchange="OnKundeValgt">
+                            <option value="">-- Vælg kunde --</option>
+                            @foreach (var kunde in alleKunder)
+                            {
+                                <option value="@kunde.KundeId">@kunde.FuldeNavn</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                @* Klinik *@
+                <div class="formular-sektion">
+                    <div class="formular-felt">
+                        <label for="klinik">Klinik</label>
+                        <select id="klinik" @onchange="OnKlinikValgt">
+                            <option value="">-- Vælg klinik --</option>
+                            @foreach (var klinik in alleKlinikker)
+                            {
+                                <option value="@klinik.KlinikId">@klinik.Navn</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                @* Behandler – vises kun når klinik er valgt *@
+                @if (valgteKlinikId != Guid.Empty)
+                {
+                    <div class="formular-sektion">
+                        <div class="formular-felt">
+                            <label for="behandler">Behandler</label>
+                            <select id="behandler" @onchange="OnBehandlerValgt">
+                                <option value="">-- Vælg behandler --</option>
+                                @foreach (var behandler in filtreredeBehandlere)
+                                {
+                                    <option value="@behandler.BehandlerId">@behandler.Fornavn @behandler.Efternavn</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                }
+
+                @* Behandlingstype – vises kun når behandler er valgt *@
+                @if (valgteBehandlerId != Guid.Empty)
+                {
+                    <div class="formular-sektion">
+                        <div class="formular-felt">
+                            <label for="behandlingstype">Behandlingstype</label>
+                            <select id="behandlingstype" @onchange="OnBehandlingstypeValgt">
+                                <option value="">-- Vælg behandlingstype --</option>
+                                @foreach (var type in filtreredeBehandlingstyper)
+                                {
+                                    <option value="@type.BehandlingstypeId">@type.Navn – @type.Pris kr.</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                }
+
+                @* Dato og tid – vises kun når behandlingstype er valgt *@
+                @if (valgteBehandlingstypeId != Guid.Empty)
+                {
+                    <div class="formular-sektion">
+                        <div class="formular-grid">
+                            <div class="formular-felt">
+                                <label for="dato">Dato</label>
+                                <input id="dato" type="date" @bind="valgtDato" />
+                            </div>
+                            <div class="formular-felt">
+                                <label for="starttid">Starttidspunkt</label>
+                                <input id="starttid" type="time" @bind="valgtStartTid" />
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Prisvisning *@
+                    @if (valgteBehandlingstype is not null)
+                    {
+                        <div class="pris-boks">
+                            <p class="pris-label">Pris uden rabat</p>
+                            <p class="pris-beloeb">@valgteBehandlingstype.Pris kr.</p>
+                            <p class="pris-note">Varighed: @valgteBehandlingstype.VarighedMinutter minutter</p>
+                            <p class="pris-note">Rabat beregnes automatisk ved oprettelse</p>
+                        </div>
+                    }
+                }
+
+                <button type="button" @onclick="OpretBookingAsync" disabled="@(!KanOprette())">
+                    Opret Booking
+                </button>
+            </div>
+        }
+    </article>
+</main>
+
+@code {
+    private List<KlinikDto> alleKlinikker = new();
+    private List<KundeDto> alleKunder = new();
+    private List<BehandlerDto> alleBehandlere = new();
+    private List<BehandlingstypeDto> alleBehandlingstyper = new();
+    private List<BehandlerDto> filtreredeBehandlere = new();
+    private List<BehandlingstypeDto> filtreredeBehandlingstyper = new();
+
+    private Guid valgtKundeId = Guid.Empty;
+    private Guid valgteKlinikId = Guid.Empty;
+    private Guid valgteBehandlerId = Guid.Empty;
+    private Guid valgteBehandlingstypeId = Guid.Empty;
+    private BehandlingstypeDto? valgteBehandlingstype;
+    private BookingResponse? senesteBookingResponse;
+
+    private DateOnly valgtDato = DateOnly.FromDateTime(DateTime.Today);
+    private TimeOnly valgtStartTid = TimeOnly.MinValue;
+
+    private bool isLoading = true;
+    private string besked = "";
+    private bool success = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        alleKunder = (await KundeFacade.HentAlleKunderAsync()).ToList();
+        alleKlinikker = (await BookingFacade.HentAlleKlinikkerAsync()).ToList();
+        alleBehandlere = (await BookingFacade.HentAlleBehandlereAsync()).ToList();
+        alleBehandlingstyper = (await BookingFacade.HentAlleBehandlingstyperAsync()).ToList();
+        isLoading = false;
+    }
+
+    private void OnKundeValgt(ChangeEventArgs e)
+    {
+        if (!Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            valgtKundeId = Guid.Empty;
+            return;
+        }
+
+        valgtKundeId = id;
+    }
+
+    private void OnKlinikValgt(ChangeEventArgs e)
+    {
+        if (!Guid.TryParse(e.Value?.ToString(), out var id)) return;
+        valgteKlinikId = id;
+        valgteBehandlerId = Guid.Empty;
+        valgteBehandlingstypeId = Guid.Empty;
+        valgteBehandlingstype = null;
+        filtreredeBehandlere = alleBehandlere
+            .Where(b => b.KlinikIds.Contains(valgteKlinikId))
+            .ToList();
+        filtreredeBehandlingstyper = new();
+    }
+
+    private void OnBehandlerValgt(ChangeEventArgs e)
+    {
+        if (!Guid.TryParse(e.Value?.ToString(), out var id)) return;
+        valgteBehandlerId = id;
+        valgteBehandlingstypeId = Guid.Empty;
+        valgteBehandlingstype = null;
+        var behandler = filtreredeBehandlere
+            .FirstOrDefault(b => b.BehandlerId == valgteBehandlerId);
+
+        filtreredeBehandlingstyper = alleBehandlingstyper
+            .Where(bt => behandler?.BehandlingstypeIds.Contains(bt.BehandlingstypeId) == true)
+            .ToList();
+    }
+
+    private void OnBehandlingstypeValgt(ChangeEventArgs e)
+    {
+        if (!Guid.TryParse(e.Value?.ToString(), out var id)) return;
+        valgteBehandlingstypeId = id;
+        valgteBehandlingstype = filtreredeBehandlingstyper
+            .FirstOrDefault(bt => bt.BehandlingstypeId == valgteBehandlingstypeId);
+    }
+
+    private DateTime BeregnSlutTid()
+    {
+        var start = valgtDato.ToDateTime(valgtStartTid);
+        return start.AddMinutes(valgteBehandlingstype?.VarighedMinutter ?? 0);
+    }
+
+    private bool KanOprette()
+    {
+        return valgtKundeId != Guid.Empty &&
+               valgteKlinikId != Guid.Empty &&
+               valgteBehandlerId != Guid.Empty &&
+               valgteBehandlingstypeId != Guid.Empty &&
+               valgtStartTid != TimeOnly.MinValue;
+    }
+
+    private async Task OpretBookingAsync()
+    {
+        if (valgtKundeId == Guid.Empty)
+        {
+            besked = "Vælg en kunde.";
+            success = false;
+            return;
+        }
+
+        if (valgteBehandlingstype is null)
+        {
+            besked = "Vælg en behandlingstype.";
+            success = false;
+            return;
+        }
+
+        var startTid = valgtDato.ToDateTime(valgtStartTid);
+        var slutTid = BeregnSlutTid();
+
+        var request = new OpretBookingRequest
+        {
+            KundeId = valgtKundeId,
+            BehandlerId = valgteBehandlerId,
+            KlinikId = valgteKlinikId,
+            BehandlingstypeId = valgteBehandlingstypeId,
+            StartTid = startTid,
+            SlutTid = slutTid
+        };
+
+        try
+        {
+            var response = await BookingFacade.OpretBookingAsync(request);
+
+            senesteBookingResponse = response;
+            besked = response.Besked ?? "Booking oprettet";
+            success = response.Success;
+        }
+        catch (Exception ex)
+        {
+            senesteBookingResponse = null;
+            besked = ex.Message;
+            success = false;
+        }
+
+
+    }
+    private void LukPopup()
+    {
+        besked = "";
+        success = false;
+        senesteBookingResponse = null;
+    }
+}

@@ -1,0 +1,178 @@
+﻿@page "/booking-administration"
+@rendermode InteractiveServer
+@using BookRight.Facade.Interfaces
+@using BookRight.Facade.Contracts.Bookinger
+@inject IBookingFacade BookingFacade
+
+<main class="booking-admin">
+    <BookRightTopNav />
+
+    <header class="booking-admin__header">
+        <h1>Bookingadministration</h1>
+        <p>Se og administrer bookinger for en valgt dato.</p>
+    </header>
+
+    <section class="booking-admin__toolbar" aria-labelledby="booking-filter-heading">
+        <h2 id="booking-filter-heading">Filter</h2>
+
+        <form class="booking-admin__filter">
+            <label for="booking-date">Dato</label>
+            <input id="booking-date"
+                   name="booking-date"
+                   type="date"
+                   class="booking-admin__date"
+                   value="@valgtDato.ToString("yyyy-MM-dd")"
+                   @onchange="OnDatoChanged" />
+        </form>
+    </section>
+
+    <section aria-labelledby="booking-table-heading">
+        <h2 id="booking-table-heading">Bookinger</h2>
+
+        @if (bookinger.Count == 0)
+        {
+            <p class="booking-admin__empty">Ingen bookinger på den valgte dato.</p>
+        }
+        else
+        {
+            <table class="booking-table">
+                <caption>
+                    Bookinger for @valgtDato.ToString("dd/MM/yyyy")
+                </caption>
+
+                <thead>
+                    <tr>
+                        <th scope="col">Kunde</th>
+                        <th scope="col">Behandler</th>
+                        <th scope="col">Behandling</th>
+                        <th scope="col">Start</th>
+                        <th scope="col">Slut</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Pris</th>
+                        <th scope="col">Rabat</th>
+                        <th scope="col">Handlinger</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var booking in bookinger)
+                    {
+                        <tr>
+                            <td>@booking.KundeNavn</td>
+                            <td>@booking.BehandlerNavn</td>
+                            <td>@booking.BehandlingstypeNavn</td>
+                            <td>
+                                <time datetime="@booking.StartTid.ToString("yyyy-MM-ddTHH:mm")">
+                                    @booking.StartTid.ToString("HH:mm")
+                                </time>
+                            </td>
+                            <td>
+                                <time datetime="@booking.SlutTid.ToString("yyyy-MM-ddTHH:mm")">
+                                    @booking.SlutTid.ToString("HH:mm")
+                                </time>
+                            </td>
+                            <td>
+                                <span class="booking-status @GetStatusClass(booking.Status)">
+                                    @booking.Status
+                                </span>
+                            </td>
+                            <td>@booking.PrisMedRabat.ToString("N2") kr.</td>
+                            <td>@booking.AnvendtRabatType</td>
+                            <td>
+                                <div class="booking-actions" aria-label="Bookinghandlinger">
+                                    <button class="booking-actions__button booking-actions__button--danger"
+                                            type="button"
+                                            @onclick="() => Aflys(booking.BookingId)">
+                                        Aflys
+                                    </button>
+
+                                    <button class="booking-actions__button"
+                                            type="button"
+                                            @onclick="() => MarkerAnkommet(booking.BookingId)">
+                                        Ankommet
+                                    </button>
+
+                                    <button class="booking-actions__button"
+                                            type="button"
+                                            @onclick="() => MarkerNoShow(booking.BookingId)">
+                                        No-show
+                                    </button>
+
+                                    <button class="booking-actions__button"
+                                            type="button"
+                                            @onclick="() => Afslut(booking.BookingId)">
+                                        Afslut
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+</main>
+
+@code {
+    private DateOnly valgtDato = DateOnly.FromDateTime(DateTime.Today);
+    private List<BookingKalenderResponse> bookinger = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HentBookinger();
+    }
+
+    private async Task OnDatoChanged(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParse(e.Value?.ToString(), out var nyDato))
+        {
+            valgtDato = nyDato;
+            await HentBookinger();
+        }
+    }
+
+    private async Task HentBookinger()
+    {
+        bookinger = await BookingFacade.HentBookingerForDatoAsync(valgtDato);
+    }
+
+    private async Task Aflys(Guid bookingId)
+    {
+        await BookingFacade.AflysBookingAsync(bookingId);
+        await HentBookinger();
+    }
+
+    private async Task MarkerAnkommet(Guid bookingId)
+    {
+        await BookingFacade.MarkerAnkommetAsync(bookingId);
+        await HentBookinger();
+    }
+
+    private async Task MarkerNoShow(Guid bookingId)
+    {
+        await BookingFacade.MarkerNoShowAsync(bookingId);
+        await HentBookinger();
+    }
+
+    private async Task Afslut(Guid bookingId)
+    {
+        await BookingFacade.AfslutBookingAsync(bookingId);
+        await HentBookinger();
+    }
+
+    private static string GetStatusClass(string status)
+    {
+        return status.ToLowerInvariant() switch
+        {
+            "aktiv" => "booking-status--active",
+            "ankommet" => "booking-status--arrived",
+            "afsluttet" => "booking-status--completed",
+            "aflyst" => "booking-status--cancelled",
+            "noshow" => "booking-status--noshow",
+            _ => "booking-status--default"
+        };
+    }
+}
+
+
+

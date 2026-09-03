@@ -1,0 +1,211 @@
+.opret-kunde-side {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 1.75rem;
+    color: var(--br-text);
+}
+
+.opret-kunde-kort {
+    width: 100%;
+    margin: 0;
+    padding: 2rem;
+    color: var(--br-text);
+    background: var(--br-surface);
+    border: 1px solid var(--br-border);
+    border-radius: 8px;
+    box-shadow: 0 16px 32px rgba(31, 41, 55, 0.12);
+}
+
+.opret-kunde-header {
+    margin-bottom: 2rem;
+}
+
+.brand {
+    margin: 0 0 0.75rem;
+    color: var(--br-text);
+    font-size: 2.000rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+h1 {
+    margin: 0;
+    color: var(--br-text);
+    font-size: 1.55rem;
+    font-weight: 800;
+}
+
+::deep .opret-kunde-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2.25rem;
+}
+
+.formular-sektion {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.formular-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2.25rem 2.25rem;
+}
+
+.formular-felt {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.formular-felt--fuld {
+    grid-column: 1 / -1;
+}
+
+label {
+    color: var(--br-text);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+::deep input,
+::deep textarea {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid var(--br-border);
+    border-radius: 0.875rem;
+    color: var(--br-text);
+    background: var(--br-surface-soft);
+    font-family: inherit;
+    font-size: 1.25rem;
+}
+
+::deep input {
+    min-height: 3.875rem;
+    padding: 0.75rem 1.5rem;
+}
+
+::deep textarea {
+    min-height: 10.625rem;
+    resize: vertical;
+    padding: 1rem 1.5rem;
+}
+
+::deep input:focus,
+::deep textarea:focus {
+    outline: 3px solid rgba(196, 255, 145, 0.22);
+    border-color: var(--br-accent);
+}
+
+button {
+    display: block;
+    width: 100%;
+    min-height: 4.5rem;
+    border: 0;
+    border-radius: 0.875rem;
+    color: var(--br-surface);
+    background: var(--br-accent);
+    font-size: 1.5rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+button:focus {
+    outline: 3px solid rgba(196, 255, 145, 0.3);
+    outline-offset: 3px;
+}
+
+.opret-kunde-status {
+    margin: 1.5rem 0 0;
+    color: var(--br-accent);
+    font-weight: 700;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+}
+
+.error-modal,
+.success-modal {
+    width: min(100%, 32rem);
+    padding: 2rem;
+    border-radius: 8px;
+    background: var(--br-bg);
+    color: var(--br-text);
+    border: 1px solid var(--br-accent);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+}
+
+.error-modal h2,
+.success-modal h2 {
+    margin: 0 0 0.75rem;
+    color: var(--br-text);
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.error-modal p,
+.success-modal p {
+    margin: 0 0 1.5rem;
+    font-size: 1rem;
+}
+
+.error-modal button,
+.success-modal button {
+    width: 100%;
+    min-height: 3.5rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--br-accent);
+    color: var(--br-surface);
+    font-size: 1.25rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+@media (max-width: 48rem) {
+    .opret-kunde-side {
+        padding: 1rem;
+    }
+
+    .opret-kunde-kort {
+        padding: 2rem 1.25rem;
+    }
+
+    .brand {
+        font-size: 2.25rem;
+    }
+
+    .formular-grid {
+        grid-template-columns: 1fr;
+    }
+
+    ::deep .opret-kunde-form {
+        gap: 1.75rem;
+    }
+
+}

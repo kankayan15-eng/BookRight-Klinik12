@@ -1,0 +1,346 @@
+@page "/"
+@rendermode InteractiveServer
+@using BookRight.Facade.Interfaces
+@using BookRight.Facade.Contracts.Bookinger
+@using BookRight.Facade.Contracts.Kunder
+@inject IBookingFacade BookingFacade
+@inject IKundeFacade KundeFacade
+
+<PageTitle>BookRight Dashboard</PageTitle>
+
+<main class="home-dashboard">
+    <BookRightTopNav />
+
+    <section class="welcome-panel" aria-labelledby="welcome-heading">
+        <h2 id="welcome-heading">Kalender-dashboard</h2>
+        <p>Overblik over bookinger for behandlere</p>
+
+        <label for="kalender-dato" style="display:block; margin-top:1rem; font-weight:600;">Vælg dato</label>
+        <input id="kalender-dato"
+               type="date"
+               value="@valgtDato.ToString("yyyy-MM-dd")"
+               @onchange="OnDatoChanged" />
+    </section>
+
+    <section class="metric-grid" aria-label="Nøgletal">
+        <article class="metric-card">
+            <p>Aktive kunder</p>
+            <strong>@antalKunder</strong>
+        </article>
+
+        <article class="metric-card">
+            <p>Bookinger valgt dato</p>
+            <strong>@bookinger.Count</strong>
+        </article>
+
+        <article class="metric-card">
+            <p>Bookinger denne uge</p>
+            <strong>@antalBookingerDenneUge</strong>
+        </article>
+
+        <article class="metric-card">
+            <p>Afsluttede på valgt dato</p>
+            <strong>@antalAfsluttedePaaValgtDato</strong>
+        </article>
+    </section>
+
+    <section class="appointments-panel" aria-labelledby="appointments-heading">
+        <h2 id="appointments-heading">Bookinger @valgtDato.ToString("dd/MM/yyyy")</h2>
+
+        <div class="appointment-list">
+            @if (bookinger.Count == 0)
+            {
+                <p>Ingen bookinger på @valgtDato.ToString("dd/MM/yyyy").</p>
+            }
+            else
+            {
+                @foreach (var gruppe in bookinger.GroupBy(b => b.BehandlerNavn).OrderBy(g => g.Key))
+                {
+                    <h3 class="appointment-group-heading">@gruppe.Key</h3>
+
+                    @foreach (var b in gruppe.OrderBy(x => x.StartTid))
+                    {
+                        <article class="appointment-item">
+                            <div>
+                                <span>Dato &amp; Tid</span>
+                                <time datetime="@b.StartTid.ToString("yyyy-MM-ddTHH:mm")">
+                                    @b.StartTid.ToString("dd-MM-yyyy")
+                                </time>
+                                <p>@b.StartTid.ToString("HH:mm") - @b.SlutTid.ToString("HH:mm")</p>
+                            </div>
+
+                            <div>
+                                <span>Behandling</span>
+                                <strong>@b.BehandlingstypeNavn</strong>
+                                <p>@b.KundeNavn</p>
+                            </div>
+
+                            <div>
+                                <span>Behandler</span>
+                                <strong>@b.BehandlerNavn</strong>
+                                <p>@b.Status</p>
+                            </div>
+                        </article>
+                    }
+                }
+            }
+        </div>
+    </section>
+
+    <section class="quick-actions" aria-label="Hurtige handlinger">
+        <article class="quick-action quick-action--booking">
+            <h2>Hurtig booking</h2>
+            <p>Opret en ny booking til en kunde</p>
+            <NavLink class="quick-action__link" href="opret-booking">Opret booking</NavLink>
+        </article>
+
+        <article class="quick-action quick-action--customer">
+            <h2>Ny kunde</h2>
+            <p>Tilføj en ny kunde til systemet</p>
+            <NavLink class="quick-action__link" href="kunder/opret">Opret kunde</NavLink>
+        </article>
+    </section>
+</main>
+
+@code {
+    private DateOnly valgtDato = DateOnly.FromDateTime(DateTime.Today);
+    private List<BookingKalenderResponse> bookinger = new();
+
+    private int antalKunder;
+    private int antalBookingerDenneUge;
+    private int antalAfsluttedePaaValgtDato;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await IndlaesDashboardAsync();
+    }
+
+    private async Task OnDatoChanged(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParse(e.Value?.ToString(), out var nyDato))
+        {
+            valgtDato = nyDato;
+            await IndlaesDashboardAsync();
+        }
+    }
+
+    private async Task IndlaesDashboardAsync()
+    {
+        antalKunder = (await KundeFacade.HentAlleKunderAsync()).Count;
+
+        bookinger = await BookingFacade.HentBookingerForDatoAsync(valgtDato);
+
+        antalAfsluttedePaaValgtDato = bookinger.Count(b =>
+            string.Equals(b.Status, "Afsluttet", StringComparison.OrdinalIgnoreCase));
+
+        antalBookingerDenneUge = await TaelBookingerDenneUgeAsync();
+    }
+
+    private async Task<int> TaelBookingerDenneUgeAsync()
+    {
+        var iDag = DateOnly.FromDateTime(DateTime.Today);
+        var mandag = iDag.AddDays(-(((int)iDag.DayOfWeek + 6) % 7));
+        var total = 0;
+
+        for (var dato = mandag; dato <= mandag.AddDays(6); dato = dato.AddDays(1))
+        {
+            var dagensBookinger = await BookingFacade.HentBookingerForDatoAsync(dato);
+            total += dagensBookinger.Count;
+        }
+
+        return total;
+    }
+}
+
+<style>
+    .home-dashboard {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 1.75rem;
+        color: var(--br-text);
+    }
+
+    .welcome-panel,
+    .appointments-panel {
+        padding: 2rem;
+        border-radius: 8px;
+        background: var(--br-surface);
+        border: 1px solid var(--br-border);
+        box-shadow: 0 16px 32px rgba(31, 41, 55, 0.12);
+    }
+
+    .welcome-panel {
+        margin-bottom: 1.75rem;
+    }
+
+    .welcome-panel h2,
+    .appointments-panel h2,
+    .quick-action h2 {
+        margin: 0 0 0.65rem;
+        color: var(--br-text);
+        font-size: 1.55rem;
+        font-weight: 800;
+    }
+
+    .welcome-panel p,
+    .quick-action p {
+        margin: 0;
+    }
+
+    .welcome-panel label {
+        color: var(--br-text);
+    }
+
+    .welcome-panel input {
+        width: min(100%, 18rem);
+        min-height: 2.75rem;
+        margin-top: 0.5rem;
+        padding: 0.55rem 0.8rem;
+        border: 1px solid var(--br-border);
+        border-radius: 8px;
+        background: var(--br-surface-soft);
+        color: var(--br-text);
+        font: inherit;
+    }
+
+    .welcome-panel input:focus {
+        outline: 3px solid rgba(196, 255, 145, 0.22);
+        border-color: var(--br-accent);
+    }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .metric-card {
+        min-height: 9rem;
+        padding: 1.5rem;
+        border-radius: 8px;
+        background: var(--br-surface);
+        border: 1px solid var(--br-border);
+        box-shadow: 0 16px 32px rgba(31, 41, 55, 0.12);
+    }
+
+    .metric-card p {
+        margin: 0 0 0.9rem;
+        line-height: 1.45;
+    }
+
+    .metric-card strong {
+        color: var(--br-accent);
+        font-size: 2rem;
+        line-height: 1;
+    }
+
+    .appointments-panel {
+        margin-bottom: 1.75rem;
+    }
+
+    .appointment-list {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .appointment-group-heading {
+        margin: 1.25rem 0 0.5rem;
+        color: var(--br-accent);
+        font-weight: 800;
+    }
+
+    .appointment-item {
+        display: grid;
+        grid-template-columns: 1fr 1.15fr 1.15fr;
+        gap: 1.5rem;
+        padding: 1.25rem;
+        border-left: 4px solid var(--br-accent);
+        border-radius: 0 8px 8px 0;
+        background: var(--br-surface-soft);
+    }
+
+    .appointment-item span {
+        display: block;
+        margin-bottom: 0.35rem;
+        color: var(--br-muted);
+    }
+
+    .appointment-item time,
+    .appointment-item strong {
+        display: block;
+        color: var(--br-text);
+        font-weight: 800;
+    }
+
+    .appointment-item p {
+        margin: 0.25rem 0 0;
+        color: var(--br-accent);
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.75rem;
+    }
+
+    .quick-action {
+        padding: 2rem;
+        border-radius: 8px;
+        color: var(--br-text);
+        border: 1px solid var(--br-border);
+        box-shadow: 0 16px 32px rgba(31, 41, 55, 0.18);
+    }
+
+    .quick-action h2,
+    .quick-action p {
+        color: var(--br-text);
+    }
+
+    .quick-action--booking {
+        background: var(--br-surface);
+    }
+
+    .quick-action--customer {
+        background: var(--br-surface-soft);
+    }
+
+    .quick-action__link {
+        display: inline-block;
+        margin-top: 1.8rem;
+        padding: 0.8rem 1.4rem;
+        border-radius: 8px;
+        background: var(--br-accent);
+        color: var(--br-surface);
+        text-decoration: none;
+        font-weight: 800;
+    }
+
+    @@media (max-width: 900px) {
+        .metric-grid,
+        .quick-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .appointment-item {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 640px) {
+        .home-dashboard {
+            padding: 1rem;
+        }
+
+        .metric-grid,
+        .quick-actions {
+            width: 100%;
+        }
+
+        .metric-grid,
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

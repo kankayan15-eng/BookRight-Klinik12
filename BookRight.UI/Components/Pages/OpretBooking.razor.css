@@ -1,0 +1,232 @@
+﻿.opret-booking-side {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 1.75rem;
+    color: var(--br-text);
+}
+
+.opret-booking-kort {
+    width: 100%;
+    margin: 0;
+    padding: 2rem;
+    color: var(--br-text);
+    background: var(--br-surface);
+    border: 1px solid var(--br-border);
+    border-radius: 8px;
+    box-shadow: 0 16px 32px rgba(31, 41, 55, 0.12);
+}
+
+.opret-booking-header {
+    margin-bottom: 2rem;
+}
+
+.brand {
+    margin: 0 0 0.75rem;
+    color: var(--br-text);
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+h1 {
+    margin: 0;
+    color: var(--br-text);
+    font-size: 1.55rem;
+    font-weight: 800;
+}
+
+.opret-booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2.25rem;
+}
+
+.formular-sektion {
+    min-width: 0;
+}
+
+.formular-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2.25rem;
+}
+
+.formular-felt {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+label {
+    color: var(--br-text);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+input,
+select {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 3.875rem;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--br-border);
+    border-radius: 0.875rem;
+    color: var(--br-text);
+    background: var(--br-surface-soft);
+    font-family: inherit;
+    font-size: 1.25rem;
+    appearance: none;
+}
+
+select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1.5rem center;
+    background-size: 16px 12px;
+    padding-right: 3rem;
+}
+
+input:focus,
+select:focus {
+    outline: 3px solid rgba(196, 255, 145, 0.22);
+    border-color: var(--br-accent);
+}
+
+input:disabled,
+select:disabled {
+    background: #151515;
+    color: #8f8f8f;
+    cursor: not-allowed;
+}
+
+.pris-boks {
+    padding: 1.5rem;
+    background: var(--br-surface-soft);
+    border-radius: 0.875rem;
+    border: 1px solid var(--br-accent);
+}
+
+.pris-label {
+    margin: 0 0 0.25rem;
+    color: var(--br-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.pris-beloeb {
+    margin: 0 0 0.25rem;
+    color: var(--br-text);
+    font-size: 1.75rem;
+    font-weight: 800;
+}
+
+.pris-note {
+    margin: 0;
+    color: var(--br-muted);
+    font-size: 0.875rem;
+}
+
+button {
+    display: block;
+    width: 100%;
+    min-height: 4.5rem;
+    border: 0;
+    border-radius: 0.875rem;
+    color: var(--br-surface);
+    background: var(--br-accent);
+    font-size: 1.5rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+button:disabled {
+    background: #5f7450;
+    cursor: not-allowed;
+}
+
+button:focus {
+    outline: 3px solid rgba(196, 255, 145, 0.3);
+    outline-offset: 3px;
+}
+
+.status-succes {
+    margin: 0;
+    color: var(--br-accent);
+    font-weight: 700;
+}
+
+.status-fejl {
+    margin: 0;
+    color: var(--br-danger);
+    font-weight: 700;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+}
+
+.booking-modal {
+    width: min(100%, 32rem);
+    padding: 2rem;
+    border-radius: 8px;
+    background: var(--br-bg);
+    color: var(--br-text);
+    border: 1px solid var(--br-accent);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+}
+
+.booking-modal h2 {
+    margin: 0 0 0.75rem;
+    color: var(--br-text);
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.booking-modal p {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+}
+
+.booking-modal button {
+    width: 100%;
+    min-height: 3.5rem;
+    margin-top: 0.5rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--br-accent);
+    color: var(--br-surface);
+    font-size: 1.25rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+@media (max-width: 48rem) {
+    .opret-booking-side {
+        padding: 1rem;
+    }
+
+    .opret-booking-kort {
+        padding: 2rem 1.25rem;
+    }
+
+    .brand {
+        font-size: 2.25rem;
+    }
+
+    .formular-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .opret-booking-form {
+        gap: 1.75rem;
+    }
+}
